@@ -65,7 +65,11 @@ class ListadoPersonas extends StatelessWidget {
               Navigator.of(context).pop(true);
             });
             return Notificacion(
-                tipo: 3, titulo: 'Registrado', mensaje: resultado);
+                tipo: resultado.toLowerCase().contains('salida')
+                    ? Notificacion.logout
+                    : Notificacion.login,
+                titulo: 'Registrado',
+                mensaje: resultado);
           });
 
       cerrarListadoPersonas(context);
