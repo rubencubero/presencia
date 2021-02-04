@@ -7,6 +7,12 @@ class Notificacion extends StatefulWidget {
   final String titulo;
   final String mensaje;
 
+  static const int error = 1;
+  static const int warning = 2;
+  static const int info = 3;
+  static const int logout = 4;
+  static const int login = 5;
+
   const Notificacion({Key key, this.tipo, this.titulo, this.mensaje})
       : super(key: key);
 
@@ -76,6 +82,12 @@ class _NotificacionState extends State<Notificacion> {
         break;
       case 3:
         icono = Icon(Icons.info, color: Colors.blue, size: size);
+        break;
+      case 4:
+        icono = Icon(Icons.logout, color: Colors.red, size: size);
+        break;
+      case 5:
+        icono = Icon(Icons.login, color: Colors.green, size: size);
         break;
     }
 

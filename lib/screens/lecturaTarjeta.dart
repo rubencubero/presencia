@@ -37,7 +37,10 @@ class LecturaTarjeta extends StatelessWidget {
                 showDialog(
                     context: context,
                     builder: (BuildContext context) {
-                      return Notificacion(titulo: 'Alerta', mensaje: resultado);
+                      return Notificacion(
+                          tipo: Notificacion.warning,
+                          titulo: 'Alerta',
+                          mensaje: resultado);
                     });
               }
             },
@@ -139,7 +142,11 @@ class LecturaTarjeta extends StatelessWidget {
                       Navigator.of(context).pop(true);
                     });
                     return Notificacion(
-                        tipo: 3, titulo: 'Registrado', mensaje: resultado);
+                        tipo: resultado.toLowerCase().contains('salida')
+                            ? Notificacion.logout
+                            : Notificacion.login,
+                        titulo: 'Registrado',
+                        mensaje: resultado);
                   });
             } else {
               /*mensaje =
@@ -151,8 +158,8 @@ class LecturaTarjeta extends StatelessWidget {
                       Navigator.of(context).pop(true);
                     });
                     return Notificacion(
-                        tipo: 1,
-                        titulo: 'Alerta',
+                        tipo: Notificacion.error,
+                        titulo: 'Error',
                         mensaje:
                             'Persona con tarjeta $idTarjeta no encontrada. Avisar a informática.');
                   });
