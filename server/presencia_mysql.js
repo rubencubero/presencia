@@ -45,10 +45,91 @@ app.get('/personas/:puntoAcceso', async (req, res, next) => {
 app.get('/parte_activo/:userID', async (req, res, next) => {      
   console.debug('Buscar parte activo de usuario: ' + req.params.userID);
   const [rows] = await db.query("SELECT id FROM presencia WHERE idpersona = " + req.params.userID + " AND (fin ='' OR fin IS null);");
-  console.debug('- Resultado: ' + rows[0].id);
+  if (rows.length > 0){
+    console.debug('- Resultado: ' + rows[0].id);
+  }else{
+    console.debug('No hay parte activo');
+  }
+  
   res.json(rows); 
   next();
 });
+
+setInterval( async function (){
+  console.debug('Cierre de partes desde sistema.');
+  await cerrarPartesDesdeSistema();
+  
+  /*const [rows] = await db.query('SELECT pr.id, ' +
+                                'TIMESTAMPDIFF(HOUR, ' + 
+                                'CONCAT(SUBSTR(pr.inicio,1,4),"-", SUBSTR(pr.inicio,5,2),"-", SUBSTR(pr.inicio,7,2)," ", SUBSTR(pr.inicio,10,2),":", SUBSTR(pr.inicio,12,2),":", SUBSTR(pr.inicio,14,2)), ' +
+                                'CURRENT_TIMESTAMP ' +
+                                ') AS horas ' +
+                                'FROM presencia pr WHERE  (fin = "" OR fin IS NULL) GROUP BY pr.id HAVING horas > 15;');
+  console.debug('Partes para cerrar... [' + rows.length + ']');
+  for (i=0;i<rows.length;i++){
+    cerrarParte(rows[i].id, 284, 'Informática: Cierre automático por 16 horas');
+  }*/
+}, 60000);
+
+async function cerrarPartesDesdeSistema(){  
+  //Partes duplicados
+  [rows] = await getPartesDuplicados();
+  console.debug('Partes duplicados para cerrar... [' + rows.length + ']');
+  for (i=0;i<rows.length;i++){
+    cerrarParte(rows[i].id, 284, 'Informática: Registro duplicado');
+  }
+
+  //Partes sin cerrar
+  [rows] = await getPartesSinCerrar();
+  console.debug('Partes sin cerrar... [' + rows.length + ']');
+  for (i=0;i<rows.length;i++){
+    cerrarParte(rows[i].id, 284, 'Informática: Cierre automático por 16 horas');
+  }
+}
+
+async function getPartesSinCerrar(){
+  return await db.query('SELECT pr.id, ' +
+                                'TIMESTAMPDIFF(HOUR, ' + 
+                                'CONCAT(SUBSTR(pr.inicio,1,4),"-", SUBSTR(pr.inicio,5,2),"-", SUBSTR(pr.inicio,7,2)," ", SUBSTR(pr.inicio,10,2),":", SUBSTR(pr.inicio,12,2),":", SUBSTR(pr.inicio,14,2)), ' +
+                                'CURRENT_TIMESTAMP ' +
+                                ') AS horas ' +
+                                'FROM presencia pr WHERE  (fin = "" OR fin IS NULL) GROUP BY pr.id HAVING horas > 15;');
+}
+
+async function getPartesDuplicados(){  return await db.query('SELECT MAX(id) AS id, COUNT(id) as contador FROM presencia WHERE (fin = "" OR fin IS NULL) GROUP BY idpersona, inicio HAVING contador > 1 ORDER BY id ASC;');}
+
+async function cerrarParte(id, tipo, observacion){
+  console.debug('- Cerrando parte');
+  console.debug("UPDATE presencia SET fin = '" + dateFormat(Date.now(), "yyyyMMdd hhMMss") + "', idtlogout = " + tipo + ", observaciones = '" + observacion + "' WHERE id = " + id + ";");
+  const result = await db.query("UPDATE presencia SET fin = '" + dateFormat(Date.now(), "yyyyMMdd hhMMss") + 
+                                "', idtlogout = " + tipo 
+                                + ", observaciones = '" + observacion + "' WHERE id = " + id + ";");
+  console.debug('- Resultado: ' + result.affectedRows + ' fila(s) actualizadas.');
+}
+
+app.get('/time', async (req, res) => {      
+  console.debug('Fecha - Hora: ' + dateFormat(Date.now(), "yyyyMMdd hhMMss"));
+  res.send('Fecha - Hora: ' + dateFormat(Date.now(), "yyyyMMdd hhMMss"));
+});
+
+async function main(){
+  db = await mysql.createConnection({
+    host:"192.168.123.229",
+    user: "aspdev",
+    password: "11972702",
+    //database: "eadeptlito"
+    database: "bp_pruebas"
+  });
+
+  const server = app.listen(port, () => console.log(`App listening on port: ${port}`));
+  server.keepAliveTimeout = 61 * 1000;
+  server.headersTimeout = 65 * 1000;
+ 
+  console.info('Server status: ' + server.status);
+}
+
+main();
+
 
 /*app.use((req, res, next) => {
   const error = new Error("Not found");
@@ -66,44 +147,3 @@ app.use((error, req, res, next) => {
     });
   });
 */
-
-setInterval( async function (){
-  console.debug('Cerrando partes de +16horas...');
-  const [rows] = await db.query('SELECT pr.id, ' +
-                                'TIMESTAMPDIFF(HOUR, ' + 
-                                'CONCAT(SUBSTR(pr.inicio,1,4),"-", SUBSTR(pr.inicio,5,2),"-", SUBSTR(pr.inicio,7,2)," ", SUBSTR(pr.inicio,10,2),":", SUBSTR(pr.inicio,12,2),":", SUBSTR(pr.inicio,14,2)), ' +
-                                'CURRENT_TIMESTAMP ' +
-                                ') AS horas ' +
-                                'FROM presencia pr WHERE  (fin = "" OR fin IS NULL) GROUP BY pr.id HAVING horas > 15;');
-  console.debug('Partes para cerrar... [' + rows.length + ']');
-  for (i=0;i<rows.length;i++){
-    cerrarParte(rows[i].id, 284, 'Informática: Cierre automático por 16 horas');
-  }
-}, 60000);
-
-async function cerrarParte(id, tipo, observacion){
-  console.debug('- Cerrando parte');
-  console.debug("UPDATE presencia SET fin = '" + dateFormat(Date.now(), "yyyyMMdd hMMss") + "', idtlogout = " + tipo + ", observaciones = '" + observacion + "' WHERE id = " + id + ";");
-  const result = await db.query("UPDATE presencia SET fin = '" + dateFormat(Date.now(), "yyyyMMdd hMMss") + 
-                                "', idtlogout = " + tipo 
-                                + ", observaciones = '" + observacion + "' WHERE id = " + id + ";");
-  console.debug('- Resultado: ' + result.affectedRows + ' fila(s) actualizadas.');
-}
-
-async function main(){
-  db = await mysql.createConnection({
-    host:"192.168.123.229",
-    user: "aspdev",
-    password: "11972702",
-    database: "eadeptlito"
-    //database: "bp_pruebas"
-  });
-
-  const server = app.listen(port, () => console.log(`App listening on port: ${port}`));
-  server.keepAliveTimeout = 61*1000;
-  server.headersTimeout = 65 * 1000;
- 
-  console.info('Server status: ' + server.status);
-}
-
-main();
