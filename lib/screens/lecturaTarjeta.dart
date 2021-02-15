@@ -81,8 +81,10 @@ class LecturaTarjeta extends StatelessWidget {
   }
 
   void _navegarListadoPersonas(BuildContext context) {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (context) => ListadoPersonas(_personas)));
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => ListadoPersonas(_personas, prefs)));
   }
 
   void _navegarConfiguracion(
@@ -134,7 +136,8 @@ class LecturaTarjeta extends StatelessWidget {
             if (personaLeida != null) {
               /*Parte parte = await Parte.getParteActivo(personaLeida);
               mensaje = await registrarLectura(parte, personaLeida);*/
-              var resultado = await Parte.registrarLectura(personaLeida, 282);
+              var resultado =
+                  await Parte.registrarLectura(personaLeida, 282, prefs);
               showDialog(
                   context: context,
                   builder: (BuildContext context) {

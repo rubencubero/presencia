@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:presencia/classes/notificacion.dart';
 import 'package:presencia/classes/parte.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../classes/persona.dart';
 import '../styles/styles.dart';
 import 'pinCode.dart';
 
 class ListadoPersonas extends StatelessWidget {
   final List<Persona> _personas;
-
-  ListadoPersonas(this._personas);
+  final SharedPreferences prefs;
+  ListadoPersonas(this._personas, this.prefs);
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +57,7 @@ class ListadoPersonas extends StatelessWidget {
     final resultado = await Navigator.push(context,
         MaterialPageRoute(builder: (context) => PinCode(persona.password)));
     if (resultado) {
-      var resultado = await Parte.registrarLectura(persona, 313);
+      var resultado = await Parte.registrarLectura(persona, 313, prefs);
       print(resultado.toString());
       await showDialog(
           context: context,

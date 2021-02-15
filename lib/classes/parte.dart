@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'http.dart';
 import 'persona.dart';
 import 'package:intl/intl.dart';
@@ -16,17 +18,18 @@ class Parte {
   final String time;
   final String user;
 
-  static Future<String> registrarLectura(Persona persona, int tipo) async {
+  static Future<String> registrarLectura(
+      Persona persona, int tipo, SharedPreferences preferences) async {
     Parte parte = await Parte.getParteActivo(persona);
     String resultado = '';
 
     try {
       if (parte.id == 0) {
         //Registramos la entrada
-        resultado = await Parte.abrirParte(persona, tipo);
+        resultado = await Parte.abrirParte(persona, tipo, preferences);
       } else {
         //Registramos la salida
-        resultado = await Parte.cerrarParte(parte, persona, tipo);
+        resultado = await Parte.cerrarParte(parte, persona, tipo, preferences);
       }
     } catch (e) {
       resultado = e;
@@ -57,23 +60,28 @@ class Parte {
     return parte;
   }
 
-  static Future<String> abrirParte(Persona persona, int tipo) async {
+  static Future<String> abrirParte(
+      Persona persona, int tipo, SharedPreferences preferences) async {
     await httpPost("registrar", {
       "values": persona.id +
-          ",0,0,'" +
+          ",0," +
+          preferences.getInt('DeviceID').toString() +
+          ",'" +
           DateFormat('yyyyMMdd kkmmss').format(DateTime.now()) +
           "','',$tipo,0,'','" +
           DateFormat('yyyy-MM-dd').format(DateTime.now()) +
           "','" +
           DateFormat('kk:mm:ss').format(DateTime.now()) +
-          "','PDP01'"
+          "','" +
+          preferences.getString('DeviceName') +
+          "'"
     });
 
     return 'Entrada registrada. Hola ${persona.descripcion}';
   }
 
-  static Future<String> cerrarParte(
-      Parte parte, Persona persona, int tipo) async {
+  static Future<String> cerrarParte(Parte parte, Persona persona, int tipo,
+      SharedPreferences preferences) async {
     await httpPost("cerrar_parte", {
       "values": "UPDATE presencia SET idtlogout = $tipo, fin = '" +
           DateFormat('yyyyMMdd kkmmss').format(DateTime.now()) +
@@ -81,7 +89,9 @@ class Parte {
           DateFormat('yyyy-MM-dd').format(DateTime.now()) +
           "', TIME = '" +
           DateFormat('kk:mm:ss').format(DateTime.now()) +
-          "',USER = 'PDP01' WHERE id = " +
+          "',USER = '" +
+          preferences.getString('DeviceName') +
+          "' WHERE id = " +
           parte.id.toString() +
           ";"
     });

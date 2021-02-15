@@ -11,8 +11,9 @@ class RequestResult {
 String protocolo = "http";
 // CON LOCALHOST 127.0.0.1 no ha funcionado, he tenido que poner la IP asignada del dispitivo */
 //const DOMAIN = "192.168.123.78:8000";
-//const DOMAIN = "10.175.207.180:8000";
+//const dominio = "10.207.4.52:8001";
 String dominio = "192.168.123.203:8001";
+//String dominio = "192.168.1.83:8001";
 
 Future<RequestResult> httpGet(String route, [dynamic data]) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
